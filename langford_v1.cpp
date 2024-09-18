@@ -1,6 +1,6 @@
 /**
  * Algorithme de Langford
- * @author Elior CALD
+ * @author Eliot CALD
  * @version 1.2
  */
 
