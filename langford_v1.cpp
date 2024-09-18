@@ -34,6 +34,7 @@ void afficher_tab(int t){
  * Bon c'est une giga methode de shlag, mais en gros j'ai save la 1ère solution fonctionnelle que j'ai inversé 
  * pour qu'elle devienne la dernière solution dans tab_verif, à chaque fois que je trouve une solution alors je
  * test si c'est la dernière solution, si c'est pas le cas on continue, sinon on s'arrête là. ENFIN BREF çA MARCHE!
+ * On doit avoir une vieille complexité de mort, mais bon ça passe.
  */
 bool verif_final(){
 
@@ -165,6 +166,8 @@ int main(int argc, char* argv[]){
                 stop_solution = true;
             }
 
+
+            // ici c'est là ça marche, tkt :)
             if(premier_tour == false && verif_final() == true){
                 cout << "ON S\'ARRETE BORDEL !\n" << endl;
                 stop_main = true; 
@@ -172,7 +175,7 @@ int main(int argc, char* argv[]){
 
         }
 
-        /* Methode de shlag pour enfin avoir une condition d'arrêt correct */
+        // ici on rempli le tableau de verif avec la 1ere solution fonctionnelle inversée (ouai ça veut rien dire)
         if(premier_tour == true){
             for(int a=0; a<taille_tab; a++){
                 tab_verif[(taille_tab-1)-a] = tab[a];
