@@ -1,7 +1,7 @@
 /**
  * Algorithme de Langford
  * @author Eliot CALD
- * @version 1.2
+ * @version 1.1
  */
 
 #include <iostream>
@@ -13,14 +13,42 @@
 using namespace std;
 
 int* tab; //tableau de langford
+int* tab_verif; //tableau de langford
 int* tab_value; //tableau circulaire des valeurs à entrer
 
+int taille_tab;
+
 void afficher_tab(int t){
+
     for(int k=0; k<t; k++){
         cout << tab[k] << " ";
     }
     cout << endl;
+
 }
+
+
+/**
+ * Fonction qui vérifie si on à atteint la dernière solution.
+ * 
+ * Bon c'est une giga methode de shlag, mais en gros j'ai save la 1ère solution fonctionnelle que j'ai inversé 
+ * pour qu'elle devienne la dernière solution dans tab_verif, à chaque fois que je trouve une solution alors je
+ * test si c'est la dernière solution, si c'est pas le cas on continue, sinon on s'arrête là. ENFIN BREF çA MARCHE!
+ */
+bool verif_final(){
+
+    for(int i=0; i<taille_tab; i++){
+
+
+        if(tab[i] != tab_verif[i]){
+            return false;
+        }
+
+    }
+
+    return true;
+}
+
 
 int main(int argc, char* argv[]){
 
@@ -31,18 +59,21 @@ int main(int argc, char* argv[]){
 
     int nb_valeur = atoi(argv[1]);              //nombre de valeur à placer
     int nb_repetition = atoi(argv[2]);          //nombre de fois qu'on doit répéter chaque valeurs
-    int taille_tab = nb_valeur*nb_repetition;   //taille du tableau = nb de valeurs x nb de répétition
+    taille_tab = nb_valeur*nb_repetition;       //taille du tableau = nb de valeurs x nb de répétition
     int nb_elemt = 0;                           //nb de valeurs dans le tableau de langford
     int n = 0;                                  //valeur à placer dans le tableau de langford
     int i = 0;                                  //indice du placemnt de la valeur dans le tableau
     int i_value = 0;                            //indice du tableau de valeur
-    int stop = 0;                               //condition d'arrêt de la boucle de test
-    int stop_solution = 0;                      //condition d'arrêt de la boucle de solution
-    int stop_main = 0;                          //condition d'arrêt de la boucle principale
-    int place_dispo = 0;                        //condition pour si on ne trouve pas de place
+    int cpt_solution = 0;                       //compteur du nombre de solutions total
+    bool stop = false;                          //condition d'arrêt de la boucle de test
+    bool stop_solution = false;                 //condition d'arrêt de la boucle de solution
+    bool stop_main = false;                     //condition d'arrêt de la boucle principale
+    bool place_dispo = false;                   //condition pour si on ne trouve pas de place
+    bool premier_tour = true;
     
 
     tab = (int*)malloc(sizeof(int) * taille_tab);
+    tab_verif = (int*)malloc(sizeof(int) * taille_tab); //tableau qui va contenir la 1ere solution trouvé en inversé et à cause de mon algo je devrais pouvoir arrêter la boucle principale... VOILA !
     tab_value = (int*)malloc(sizeof(int) * nb_valeur);
 
     stack<int> i_last; //pile des derniers indices placés
@@ -64,16 +95,18 @@ int main(int argc, char* argv[]){
     i_value = 0;
     nb_elemt = 0;
 
-    stop_main = 0;
+    stop_main = false;
 
     // boucle principale qui ne s'arrête que lorsque la grande valeur atteint la fin du tableau 
-    while(stop_main != 1 && tab[taille_tab-1] != nb_valeur){
+    while(stop_main != true){
 
-        stop_solution = 0;
-        while(stop_solution != 1 && nb_elemt < nb_valeur){ // boucle pour chercher une solution
-            place_dispo = 1;
-            stop = 0;
-            while(stop != 1 && i<taille_tab){ // boucle de test dans le tableau pour le placement
+        stop_solution = false;
+        while(stop_solution != true && nb_elemt < nb_valeur){ // boucle pour chercher une solution
+
+            place_dispo = true;
+            stop = false;
+
+            while(stop != true && i<taille_tab){ // boucle de test dans le tableau pour le placement
 
                 if(i+n+1 < taille_tab){ // Evite de sortir du tableau avec la 2eme valeur à placer
 
@@ -87,19 +120,23 @@ int main(int argc, char* argv[]){
                         i_value = (i_value+1)%nb_valeur; // on passe à la valeur suivante à placer
                         n = tab_value[i_value];
 
-                        stop = 1;
+                        stop = true;
                         i = 0;
+                       
                     }
                     else{ // Si pas de place on passe à la case d'après
                         i++;
                     }
                 }
                 else{ // Si la 2ème valeur à placer sort du tableau, on arrête de le parcourir
-                    stop = 1;
-                    place_dispo = 0;
+                    stop = true;
+                    place_dispo = false;
                 }
         
             }
+
+            
+            
 
             if(!i_last.empty()){ // Evite de taper dans la pile si elle est vide (en gros on évite le seg fault)
                 if(place_dispo == 0){ // on n'a jamais trouvé de place donc on prend le dernier élément placé et on le décale d'une case
@@ -125,14 +162,32 @@ int main(int argc, char* argv[]){
                 }
             }
             else{
-                stop_solution = 1;
+                stop_solution = true;
             }
-        }
-        
-        afficher_tab(taille_tab);
 
+            if(premier_tour == false && verif_final() == true){
+                cout << "ON S\'ARRETE BORDEL !\n" << endl;
+                stop_main = true; 
+            }
+
+        }
+
+        /* Methode de shlag pour enfin avoir une condition d'arrêt correct */
+        if(premier_tour == true){
+            for(int a=0; a<taille_tab; a++){
+                tab_verif[(taille_tab-1)-a] = tab[a];
+            }
+
+            premier_tour = false;
+        }
+
+        afficher_tab(taille_tab);
+        cpt_solution++;
+
+
+        
         if(!i_last.empty()){ // Evite de taper dans la pile si elle est vide (en gros on évite le seg fault)
-            if(tab[taille_tab-1] != nb_valeur){ // Si on n'a pas trouvé toutes les solutions pour une valeur alors on relance comme si la solution trouvé n'était pas correcte
+            if(premier_tour == false && verif_final() != true){ // Si on n'a pas trouvé toutes les solutions pour une valeur alors on relance comme si la solution trouvé n'était pas correcte
 
                 i = i_last.top();
                 i_last.pop();
@@ -155,10 +210,12 @@ int main(int argc, char* argv[]){
             }
         }
         else{
-            stop_main = 1;
+            stop_main = true;
         }
 
     }
+
+    cout << "Nb solutions :" << cpt_solution << endl;
 
     free(tab);
     free(tab_value);
