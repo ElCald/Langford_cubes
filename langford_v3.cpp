@@ -50,13 +50,19 @@ int main(int argc, char* argv[]){
 
     int* tab_range = (int*)malloc(sizeof(int)*n); // tableau de solutions individuelle
 
+    int* tab_lock = (int*)malloc(sizeof(int)*n); // tableau pour savoir si la case peut avancer ou pas
+
     /* 
         Génération du tableau
     */
 
     for(int j=0; j<n; j++){
         tab_range[j] = 0;
+        tab_lock[j] = 0;
     }
+
+    bool test = true;
+
 
     for(int i=0; i<k; i++){
         
@@ -64,14 +70,41 @@ int main(int argc, char* argv[]){
             tab_solutions[i][j] = tab_range[j];
         }
 
-        tab_range[n-1]++;
-        
-        for(int j=n-2; j>=0; j--){
-            if(tab_range[j]%((n-1)+(j-1)) == 0){
-                tab_range[j] = 0;
-                tab_range[j-1]++;
+        tab_range[n-1] = ((tab_range[n-1]%n) == 0 && tab_range[n-1] != 0)?0:tab_range[n-1]+1;
+
+        for(int j=n-1; j>0; j--){
+            if(tab_range[j] == 0 && tab_lock[j-1] == 1){
+
+                tab_range[j-1] = ((tab_range[j-1]%(n+(j-n))) == 0 && tab_range[j-1] != 0)?0:tab_range[j-1]+1;
+
+                tab_lock[j-1] = 0;
+
+            }
+            else if(tab_range[j] != 0){
+                tab_lock[j-1] = 1;
             }
         }
+        
+
+        /*for(int j=n; j>0; j--){
+            if(tab_range[j] != 0 && tab_range[j-1]%(n+(j-n)) == 0){
+                tab_range[j-1] = 0;
+                tab_range[j-2]++;
+                test = false;
+            }
+            if(test){
+                tab_range[n-1]++;
+            }
+            else{
+                test = true;
+            }
+        }*/
+
+        
+        
+
+        
+        
     }
 
 
