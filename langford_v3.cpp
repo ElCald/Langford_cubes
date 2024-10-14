@@ -1,7 +1,7 @@
 /**
- * Algorithme de Langford
+ * Algorithme de Langford avec cas triviaux et symétries
  * @author Eliot CALD
- * @version 3.1
+ * @version 3.2
  */
 
 #include <iostream>
@@ -22,7 +22,10 @@ int main(int argc, char* argv[]){
     int n = atoi(argv[1]);
     int k = 1; // nb de solutions possible avec cas triviaux
     int val = 0; // valeur à placer dans la case
+    int j_invert = n-1;
     int taille_tab_verif = n*2;
+    bool fail_verif = false;
+    int cpt_solutions = 0; // compteur du nombre de solutions finales
 
     for(int i=0; i<n; i++){ // calcul du nb de solutions totale
         k *= ((n-1) + i);
@@ -56,6 +59,8 @@ int main(int argc, char* argv[]){
 
     int* tab_lock = (int*)malloc(sizeof(int)*n); // tableau pour savoir si la case peut avancer ou pas
 
+    vector<int*> liste_solution;
+
     /* 
         Génération du tableau
     */
@@ -70,8 +75,10 @@ int main(int argc, char* argv[]){
 
     for(int i=0; i<k; i++){
         
+        j_invert = n-1;
         for(int j=0; j<n; j++){ // save de la solution dans le tableau de solutions
-            tab_solutions_raw[i][j] = tab_range[j];
+            tab_solutions_raw[i][j_invert] = tab_range[j];
+            j_invert--;
         }
 
         tab_range[n-1] = ((tab_range[n-1]%(n+(n-3))) == 0 && tab_range[n-1] != 0)?0:tab_range[n-1]+1;
@@ -92,6 +99,48 @@ int main(int argc, char* argv[]){
     }
 
 
+
+    // Verif des solution
+    for (int i = 0; i < k; i++) {
+
+        //reset
+        for(int j=0; j<taille_tab_verif; j++){
+            tab_verif[j] = 0;
+        }
+
+        fail_verif = false;
+
+
+        for (int j = 0; j < n; j++) {
+            if(tab_verif[tab_solutions_raw[i][j]] == 0 && tab_verif[tab_solutions_raw[i][j]+j+2] == 0){
+                tab_verif[tab_solutions_raw[i][j]] = j+1;
+                tab_verif[tab_solutions_raw[i][j]+j+2] = j+1;
+            }
+            else{
+                fail_verif = true;
+                break;
+            }
+        }
+
+        if(!fail_verif){
+            // liste_solution.push_back(tab_solutions_raw[i]);
+            cpt_solutions++;
+        }
+
+    }
+
+
+    // for (int* solution : liste_solution) {
+    //     for(int i=0; i<n; i++){
+    //         cout << solution[i] << " ";
+    //     }
+    //     cout << endl;
+    // }
+
+    cout << "Solutions >> " << cpt_solutions << endl;
+
+
+/*
     // Affichage du tableau
     for (int i = 0; i < k; i++) {
         for (int j = 0; j < n; j++) {
@@ -99,8 +148,7 @@ int main(int argc, char* argv[]){
         }
         cout << endl;
     }
-
-
+*/
 
     // Libération de la mémoire
     for (int i = 0; i < k; i++) {
