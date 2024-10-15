@@ -3,7 +3,7 @@
 # Author makefile : Cyril Rabat
 #
 
-EXEC = langford_v1 langford_v3
+EXEC = langford_v3 int2bin
 OBJECTS = 
 PROJECT_NAME = Langford
 
@@ -20,6 +20,7 @@ PROJECT_NAME = Langford
 EXEC_O = $(EXEC:=.o)
 OBJECTS_O = $(OBJECTS) $(EXEC_O)
 
+
 #
 # ARGUMENTS AND COMPILER
 #
@@ -28,16 +29,19 @@ CC = g++
 CCFLAGS_STD = -Wall -Werror
 CCFLAGS_DEBUG = -D _DEBUG_
 CCFLAGS = $(CCFLAGS_STD)
-CCLIBS = 
+CCLIBS = -fopenmp
+
+
+
 
 #
 # RULES
-#
+# $(CC) -o $$i $$i.o $(OBJECTS) $(CCLIBS); \
 
 all: msg $(OBJECTS) $(EXEC_O)
 	@echo "Create executables..."
 	@for i in $(EXEC); do \
-	$(CC) -o $$i $$i.o $(OBJECTS) $(CCLIBS); \
+	$(CC) $$i.cpp -o $$i $(OBJECTS) $(CCLIBS); \
 	done
 	@echo "Done."
 

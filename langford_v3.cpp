@@ -1,7 +1,7 @@
 /**
- * Algorithme de Langford avec cas triviaux et symétries
+ * Algorithme de Langford sans cas triviaux et avec symétries
  * @author Eliot CALD
- * @version 3.2
+ * @version 3.3
  */
 
 #include <iostream>
@@ -9,6 +9,7 @@
 #include <vector>
 #include <omp.h>
 #include <algorithm>
+#include <time.h>
 
 using namespace std;
 
@@ -46,14 +47,27 @@ int main(int argc, char* argv[]){
     }
 
     int n = atoi(argv[1]);
-    int k = 1; // nb de solutions possible avec cas triviaux
+    unsigned long long k = 1; // nb de solutions possible avec cas triviaux
     int val = 0; // valeur à placer dans la case
     int j_invert = n-1;
     int taille_tab_verif = n*2;
     bool fail_verif = false;
-    int cpt_solutions = 0; // compteur du nombre de solutions finales
-    int cpt_no_trivaux = 0; // compteur de solutions non triviales
+    unsigned long long cpt_solutions = 0; // compteur du nombre de solutions finales
+    unsigned long long cpt_no_trivaux = 0; // compteur de solutions non triviales
     int n_val = n; // variable qui permet le calcul de la valeur du modulo qui est décémenté
+
+    clock_t start, stop, mid_time;
+    double start_p, stop_p, mid_time_p, CPU_time, total;
+
+
+    #ifndef _OPENMP
+        cout << "Execution séquentielle..." << endl;
+        start = clock();
+    #else
+        cout << "Execution parallèle..." << endl;
+        start_p = omp_get_wtime();
+    #endif
+
 
     for(int i=0; i<n; i++){ // calcul du nb de solutions totale
         k *= ((n-1) + i);
@@ -62,35 +76,13 @@ int main(int argc, char* argv[]){
     cout << "Solutions totales >> " << k << endl;
 
     
+    // int* tab_verif = (int*)malloc(sizeof(int)*taille_tab_verif); // tableau qui permet de verifier dans la boucle si c'est correct
 
-    // déclaration du tableau qui contiendra toutes les solutions
-    // int** tab_solutions_raw = (int**)malloc(sizeof(int*)*k);
+    // int* tab_range = (int*)malloc(sizeof(int)*n); // tableau de solutions individuelle
 
-    // if (tab_solutions_raw == NULL) {
-    //     cerr << "Erreur d'allocation mémoire pour tab_solutions_raw" << endl;
-    //     exit(EXIT_FAILURE);
-    // }
+    // int* tab_lock = (int*)malloc(sizeof(int)*n); // tableau pour savoir si la case peut avancer ou pas
 
-
-    // initialisation du tab_solution
-    // for(int i=0; i<k; i++){
-    //     tab_solutions_raw[i] = (int*)malloc(sizeof(int)*n);
-
-    //     for(int j=0; j<n; j++){ // save de la solution dans le tableau de solutions
-    //         tab_solutions_raw[i][j] = 0;
-    //     }
-    // }
-
-    // cout << "Tableau initialisé" << endl;
-
-
-    int* tab_verif = (int*)malloc(sizeof(int)*taille_tab_verif); // tableau qui permet de verifier dans la boucle si c'est correct
-
-    int* tab_range = (int*)malloc(sizeof(int)*n); // tableau de solutions individuelle
-
-    int* tab_lock = (int*)malloc(sizeof(int)*n); // tableau pour savoir si la case peut avancer ou pas
-
-    vector<vector<int>> liste_solution;
+    vector<vector<int>> liste_solution; // liste qui contiendra toutes les solutions
 
 
     /* 
@@ -98,26 +90,28 @@ int main(int argc, char* argv[]){
     */
 
     // initialisation des tab_range et tab_lock
-    for(int j=0; j<n; j++){
-        tab_range[j] = 0;
-        tab_lock[j] = 0;
-    }
+    // for(int j=0; j<n; j++){
+    //     tab_range[j] = 0;
+    //     tab_lock[j] = 0;
+    // }
 
 
-    for(int i=0; i<k; i++){
-     
-        //IL FAUT REVERSE LE TABLEAU !!!!!!
+    int* tab_range = new int[n]();
+    int* tab_lock = new int[n]();
+
+
+    for(unsigned long long i=0; i<k; i++){  
+
         if(cas_triviaux(tab_range, n) == false){
             liste_solution.push_back(vector<int>(tab_range, tab_range + n));
             cpt_no_trivaux++;
         }
-        
-        n_val = n-1;
 
-        // changer ici en indice 0
+        n_val = n-1;
+        
         tab_range[0] = ((tab_range[0]%(n+(n-3))) == 0 && tab_range[0] != 0)?0:tab_range[0]+1;
 
-        //commencer à 1 et trouver un autre indice
+        
         for(int j=1; j<n; j++){
 
             if(tab_range[j-1] == 0 && tab_lock[j] == 1){
@@ -134,101 +128,74 @@ int main(int argc, char* argv[]){
             n_val--;
         }
 
-
-
-/*  BACKUP
-        // changer ici en indice 0
-        tab_range[n-1] = ((tab_range[n-1]%(n+(n-3))) == 0 && tab_range[n-1] != 0)?0:tab_range[n-1]+1;
-
-        //commencer à 0 et trouver un autre indice
-        for(int j=n-1; j>0; j--){
-            if(tab_range[j] == 0 && tab_lock[j-1] == 1){
-
-                tab_range[j-1] = ((tab_range[j-1]%(n+(j-n+(n-3)))) == 0 && tab_range[j-1] != 0)?0:tab_range[j-1]+1;
-
-                tab_lock[j-1] = 0;
-
-            }
-            else if(tab_range[j] != 0){
-                tab_lock[j-1] = 1;
-            }
-        }
-*/    
     }
     
+    
 
+    #ifndef _OPENMP
+        mid_time = clock();
+        total = (double)mid_time - start;
+        CPU_time = total / CLOCKS_PER_SEC;
+    #else
+        mid_time_p = omp_get_wtime();
+        CPU_time = mid_time_p - start_p;
+    #endif
+
+    printf("Time fin init solutions : %lf seconds\n", CPU_time);
 
 
     // Verif des solution
 
-    //version tableau
-/*    #pragma omp for private(fail_verif, tab_verif)
-    for (int i = 0; i < k; i++) {
-
-        //reset
-        for(int j=0; j<taille_tab_verif; j++){
-            tab_verif[j] = 0;
-        }
-
-        fail_verif = false;
-
-        for (int j = 0; j < n; j++) {
-            if(tab_verif[tab_solutions_raw[i][j]] == 0 && tab_verif[tab_solutions_raw[i][j]+j+2] == 0){
-                tab_verif[tab_solutions_raw[i][j]] = j+1;
-                tab_verif[tab_solutions_raw[i][j]+j+2] = j+1;
-            }
-            else{
-                fail_verif = true;
-                break;
-            }
-        }
-
-
-
-        if(!fail_verif){
-            // liste_solution.push_back(tab_solutions_raw[i]);
-            #pragma omp critical
-            cpt_solutions++;
-        }
-    }
-
-*/
-
     //version liste
-    #pragma omp for private(fail_verif, tab_verif)
-    for (vector<int> solution : liste_solution) {
+    #pragma omp parallel
+    {
+        #pragma omp for private(fail_verif)
+        for (vector<int> solution : liste_solution) {
 
-        //reset
-        for(int j=0; j<taille_tab_verif; j++){
-            tab_verif[j] = 0;
-        }
+            int* tab_verif = new int[taille_tab_verif]();
 
-        fail_verif = false;
+            //reset
+            for(int j=0; j<taille_tab_verif; j++){
+                tab_verif[j] = 0;
+            }
 
-         
-        if(!solution.empty()){
-            for (int j = 0; j < n; j++) {
-                if(tab_verif[solution.at(j)] == 0 && tab_verif[solution.at(j)+j+2] == 0){
-                    tab_verif[solution.at(j)] = j+1;
-                    tab_verif[solution.at(j)+j+2] = j+1;
-                }
-                else{
-                    fail_verif = true;
-                    break;
+            fail_verif = false;
+
+            
+            if(!solution.empty()){
+                for (int j = 0; j < solution.size(); j++) {
+                    if(tab_verif[solution.at(j)] == 0 && tab_verif[solution.at(j)+j+2] == 0){
+                        tab_verif[solution.at(j)] = j+1;
+                        tab_verif[solution.at(j)+j+2] = j+1;
+                    }
+                    else{
+                        fail_verif = true;
+                        break;
+                    }
                 }
             }
+
+            if(!fail_verif){
+                // liste_solution.push_back(tab_solutions_raw[i]);
+                #pragma omp critical
+                cpt_solutions++;
+            }
+            
+            delete[] tab_verif;
         }
 
-        if(!fail_verif){
-            // liste_solution.push_back(tab_solutions_raw[i]);
-            #pragma omp critical
-            cpt_solutions++;
-        }
-        
     }
 
+    #ifndef _OPENMP
+        stop = clock();
+        total = (double)stop - start;
+        CPU_time = total / CLOCKS_PER_SEC;
+    #else
+        stop_p = omp_get_wtime();
+        CPU_time = stop_p - start_p;
+    #endif
 
-
+    printf("Time : %lf seconds\n", CPU_time);
 
 
     // for (vector<int> solution : liste_solution) {
@@ -244,24 +211,9 @@ int main(int argc, char* argv[]){
     
 
 
-/*
-    // Affichage du tableau
-    for (int i = 0; i < k; i++) {
-        for (int j = 0; j < n; j++) {
-            cout << tab_solutions_raw[i][j] << " ";
-        }
-        cout << endl;
-    }
-*/
-
-    // Libération de la mémoire
-    // for (int i = 0; i < k; i++) {
-    //     free(tab_solutions_raw[i]);
-    // }
-    // free(tab_solutions_raw);
-    // free(tab_range);
-    // free(tab_lock);
-
+    // delete[] tab_range;
+    // delete[] tab_lock;
+    // delete[] tab_verif;
 
     return EXIT_SUCCESS;
 }//fin main
