@@ -56,8 +56,9 @@ int main(int argc, char* argv[]){
     unsigned long long cpt_no_trivaux = 0; // compteur de solutions non triviales
     int n_val = n; // variable qui permet le calcul de la valeur du modulo qui est décémenté
 
-    clock_t start, stop, mid_time;
-    double start_p, stop_p, mid_time_p, CPU_time, total;
+    // Variable pour calculer le temps d'execution
+    clock_t start, stop, mid_time;                          // seq
+    double start_p, stop_p, mid_time_p, CPU_time, total;    // omp
 
 
 
@@ -70,8 +71,8 @@ int main(int argc, char* argv[]){
     #endif
 
 
-
-    for(int i=0; i<n; i++){ // calcul du nb de solutions totale
+    // calcul du nb de solutions totale
+    for(int i=0; i<n; i++){ 
         k *= ((n-1) + i);
     }
 
@@ -90,9 +91,9 @@ int main(int argc, char* argv[]){
         #pragma omp for ordered
         for(int i=0; i<n-1; i++){
             
-            tab_range[n-1] = i; // initialisation du dernier pour permettre au thread de se partager le travail
+            tab_range[n-1] = i; // initialisation de la dernière case pour permettre au thread de se partager le travail
             
-            while(tab_range[n-1] == i){
+            while(tab_range[n-1] == i){ // chaque thread avance tant qu'ils génèrent des soluitions qui on comme dernière case la valeur qui leur est attribuée
                 
                 #pragma critical
                 {
@@ -131,7 +132,6 @@ int main(int argc, char* argv[]){
                 
                 tab_range[0] = ((tab_range[0]%(n+(n-3))) == 0 && tab_range[0] != 0)?0:tab_range[0]+1;
 
-                
                 for(int j=1; j<n; j++){
 
                     if(tab_range[j-1] == 0 && tab_lock[j] == 1){
@@ -167,6 +167,7 @@ int main(int argc, char* argv[]){
         stop_p = omp_get_wtime();
         CPU_time = stop_p - start_p;
     #endif
+
 
     printf("Time : %lf seconds\n", CPU_time);
 
