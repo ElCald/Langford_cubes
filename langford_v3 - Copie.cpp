@@ -39,15 +39,6 @@ bool cas_triviaux(int* tab, int taille){
 }// fin cas_triviaux
 
 
-int* clone_tab(int* tab, int taille) {
-    int* new_tab = new int[taille];
-    for (int i = 0; i < taille; ++i) {
-        new_tab[i] = tab[i];
-    }
-    return new_tab;
-}
-
-
 int main(int argc, char* argv[]){
 
     if(argc != NB_PARAM + 1){
@@ -84,78 +75,37 @@ int main(int argc, char* argv[]){
 
     cout << "Solutions totales >> " << k << endl;
 
-    vector<vector<int>> liste_solution; // liste qui contiendra toutes les solutions
     
+
+
+
+    vector<vector<int>> liste_solution; // liste qui contiendra toutes les solutions
 
 
     /* 
         Génération du tableau de solution
     */
-    // int tab_range[50] = {0};
-    // int tab_lock[50] = {0};
 
-    // int** tab_solution = new int*[k]();
-    // for(unsigned long long i=0; i<k; i++){
-    //     tab_solution[i] = new int[n]();
-    // }
-
-    // int i_solution = 0;
-  
 
     // tableau contenant la position de l'élément n pour permettre le threading
-    #pragma omp parallel private(n_val, fail_verif) 
+    #pragma omp parallel private(n_val)
     {
-
-        int* tab_range = new int[n](); // tableau de solutions individuelle
-        int* tab_lock = new int[n](); // tableau pour savoir si la case peut avancer ou pas
-       
-
-
-        #pragma omp for ordered
+        #pragma omp for 
         for(int i=0; i<n-1; i++){
-            
-            tab_range[n-1] = i; // initialisation du dernier pour permettre au thread de se partager le travail
+
+            int* tab_range = new int[n](); // tableau de solutions individuelle
+            int* tab_lock = new int[n](); // tableau pour savoir si la case peut avancer ou pas
+
+            tab_range[n-1] = i;
             
             while(tab_range[n-1] == i){
-                
-                #pragma critical
-                {
-                    if(cas_triviaux(tab_range, n) == false){ // si c'est pas un cas triviale on le passe au test de langford
-                        // for(int l=0; l<n; l++){
-                        //     tab_solution[i_solution][l] = tab_range[l];
-                        // }
-                        // liste_solution.push_back(vector<int>(tab_range, tab_range + n)); //sauvegarde d'une copie de tab_range dans un vecteur dans la liste
-                        
-                        // i_solution++;
-                        // cpt_no_trivaux++;
 
-                        int* tab_verif = new int[taille_tab_verif](); // tableau qui permet de verifier dans la boucle si c'est correct
-
-                        fail_verif = false;
-
-                        // vérif langford
-                        for (int j = 0; j < n; j++) {
-                            if(tab_verif[tab_range[j]] == 0 && tab_verif[tab_range[j]+j+2] == 0){
-                                tab_verif[tab_range[j]] = j+1;
-                                tab_verif[tab_range[j]+j+2] = j+1;
-                            }
-                            else{
-                                fail_verif = true;
-                                break;
-                            }
-                        }
-                        
-
-                        if(!fail_verif){
-                            // liste_solution.push_back(tab_solutions_raw[i]);
-                            #pragma omp critical
-                            cpt_solutions++;
-                        }
-                        
-                        delete[] tab_verif;
-                    }                    
+                if(cas_triviaux(tab_range, n) == false){
+                    #pragma critical
+                    liste_solution.push_back(vector<int>(tab_range, tab_range + n));
+                    #pragma critical
+                    cpt_no_trivaux++;
                 }
-
 
                 n_val = n-1;
                 
@@ -177,25 +127,9 @@ int main(int argc, char* argv[]){
 
                     n_val--;
                 }
-
-
             }
-
-           
         }
-
-
-        delete[] tab_range;
-        delete[] tab_lock;
-        #pragma barrier
     }
-
-    
-
-    // for(int i=0; i<i_solution; i++){
-    //     liste_solution.push_back(vector<int>(tab_solution[i], tab_solution[i] + n));
-    // }
-
 
     #ifndef _OPENMP
         mid_time = clock();
@@ -208,25 +142,30 @@ int main(int argc, char* argv[]){
 
     printf("Time fin init solutions : %lf seconds\n", CPU_time);
 
+    if(!liste_solution.empty()){
+        cout << "liste non vide" << endl;
+        for (vector<int> solution : liste_solution) {
+            for(int i=0; i<n; i++){
+                cout << solution.at(i) << " ";
+            }
+            cout << endl;
+        }
+    }
 
     // Verif des solution
 
-/*
     //version liste
-    #pragma omp parallel shared(liste_solution)
-    {   
-
-        // int* tab_verif = new int[taille_tab_verif](); // tableau de solutions individuelle
-
+    #pragma omp parallel
+    {
         #pragma omp for private(fail_verif)
         for (vector<int> solution : liste_solution) {
 
-            //reset
-            // for(int j=0; j<taille_tab_verif; j++){
-            //     tab_verif[j] = 0;
-            // }
-
             int* tab_verif = new int[taille_tab_verif](); // tableau qui permet de verifier dans la boucle si c'est correct
+
+            //reset
+            for(int j=0; j<taille_tab_verif; j++){
+                tab_verif[j] = 0;
+            }
 
             fail_verif = false;
 
@@ -253,9 +192,7 @@ int main(int argc, char* argv[]){
             delete[] tab_verif;
         }
 
-        
     }
-*/
 
     #ifndef _OPENMP
         stop = clock();
@@ -269,21 +206,25 @@ int main(int argc, char* argv[]){
     printf("Time : %lf seconds\n", CPU_time);
 
 
-    // if(!liste_solution.empty()){
-    //     cout << "liste non vide" << endl;
-    //     for (vector<int> solution : liste_solution) {
-    //         for(int i=0; i<solution.size(); i++){
-    //             cout << solution.at(i) << " ";
-    //         }
-    //         cout << endl;
-    //     }
-    // }
+    if(!liste_solution.empty()){
+        cout << "liste non vide" << endl;
+        for (vector<int> solution : liste_solution) {
+            for(int i=0; i<n; i++){
+                cout << solution.at(i) << " ";
+            }
+            cout << endl;
+        }
+    }
 
 
     cout << "Solutions non triviales >> " << cpt_no_trivaux << endl;
     cout << "Solutions >> " << cpt_solutions << endl;
     
 
+
+    // delete[] tab_range;
+    // delete[] tab_lock;
+    // delete[] tab_verif;
 
     return EXIT_SUCCESS;
 }//fin main
