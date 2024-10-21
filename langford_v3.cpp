@@ -10,6 +10,10 @@
 #include <omp.h>
 #include <algorithm>
 #include <time.h>
+#include <fstream>
+#include <climits>
+
+#include "trachtenberg.h"
 
 using namespace std;
 
@@ -23,7 +27,7 @@ using namespace std;
  * @param taille Taille du tableau
  * @return True s'il y a un cas triviale et false dans le cas où c'est conforme
  */
-bool cas_triviaux(int* tab, int taille){
+inline bool cas_triviaux(int* tab, int taille){
 
     for(int i=0; i<taille; i++){
         
@@ -55,6 +59,10 @@ int main(int argc, char* argv[]){
     unsigned long long cpt_solutions = 0; // compteur du nombre de solutions finales
     unsigned long long cpt_no_trivaux = 0; // compteur de solutions non triviales
     int n_val = n; // variable qui permet le calcul de la valeur du modulo qui est décémenté
+    char* solution_total = "1"; //variable contient le nb total de solution
+    char sol_temp[10] = "";
+    int k_temp = 1;
+
 
     // Variable pour calculer le temps d'execution
     clock_t start, stop, mid_time;                          // seq
@@ -70,15 +78,22 @@ int main(int argc, char* argv[]){
         start_p = omp_get_wtime();
     #endif
 
+    
 
     // calcul du nb de solutions totale
     for(int i=0; i<n; i++){ 
-        k *= ((n-1) + i);
+        if(n<10){
+            k *= ((n-1) + i);
+        }
+        k_temp = ((n-1) + i);
+        sprintf(sol_temp, "%d", k_temp);
+        solution_total = trachtenberg(sol_temp, solution_total);
     }
 
-    cout << "Solutions totales >> " << k << endl;
+    cout << "Vraie valeur : " << solution_total << endl;
 
-    
+
+    cout << "Solutions totales >> " << k << endl;
 
     
     #pragma omp parallel private(n_val, fail_verif) 
@@ -86,21 +101,30 @@ int main(int argc, char* argv[]){
 
         int* tab_range = new int[n](); // tableau de solutions individuelle
         int* tab_lock = new int[n](); // tableau pour savoir si la case peut avancer ou pas
-       
+        int* tab_verif = new int[taille_tab_verif](); // tableau qui permet de verifier dans la boucle si c'est correct
+    
+        #ifdef _OPENMP
+            #pragma omp single
+            cout << "Nb threads : " << omp_get_num_threads() << endl;
+        #endif
 
-        #pragma omp for ordered
+
+        #pragma omp for
         for(int i=0; i<n-1; i++){
             
             tab_range[n-1] = i; // initialisation de la dernière case pour permettre au thread de se partager le travail
             
-            while(tab_range[n-1] == i){ // chaque thread avance tant qu'ils génèrent des soluitions qui on comme dernière case la valeur qui leur est attribuée
+            while(tab_range[n-1] == i){ // chaque thread avance tant qu'ils génèrent des solutions qui on comme dernière case la valeur qui leur est attribuée
                 
                 #pragma critical
                 {
                     if(cas_triviaux(tab_range, n) == false){ // si c'est pas un cas triviale on le passe au test de langford
                         cpt_no_trivaux++;
 
-                        int* tab_verif = new int[taille_tab_verif](); // tableau qui permet de verifier dans la boucle si c'est correct
+                        for(int j=0; j<taille_tab_verif; j++){
+                            tab_verif[j] = 0;
+                        }
+
 
                         fail_verif = false;
 
@@ -121,7 +145,8 @@ int main(int argc, char* argv[]){
                             cpt_solutions++;
                         }
                         
-                        delete[] tab_verif;
+                        
+
                     }                    
                 }
 
@@ -154,6 +179,7 @@ int main(int argc, char* argv[]){
 
         delete[] tab_range;
         delete[] tab_lock;
+        delete[] tab_verif;
     }
 
     
@@ -174,7 +200,8 @@ int main(int argc, char* argv[]){
 
     cout << "Solutions non triviales >> " << cpt_no_trivaux << endl;
     cout << "Solutions >> " << cpt_solutions << endl;
-    
+
+
 
     return EXIT_SUCCESS;
 }//fin main
